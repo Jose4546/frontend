@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Login.css";
 
+const API_URL = "https://backend-five-gray-32.vercel.app"; // ✅ Backend en Vercel
+
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -10,61 +12,60 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setLoading(true);
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    console.log("🔁 Enviando login:", { email, password: password ? "****" : "" });
-
-    const res = await fetch("http://localhost:5000/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    console.log("📡 Status HTTP:", res.status, res.statusText);
-
-    let data;
     try {
-      data = await res.json();
-      console.log("📥 Body JSON:", data);
-    } catch (jsonErr) {
-      console.error("❌ No se pudo parsear JSON:", jsonErr);
-      const text = await res.text();
-      console.error("📄 Cuerpo (texto):", text);
-      alert("Respuesta inválida del servidor. Revisa la consola (Network).");
-      return;
+      console.log("🔁 Enviando login:", { email, password: password ? "****" : "" });
+
+      const res = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      console.log("📡 Status HTTP:", res.status, res.statusText);
+
+      let data;
+      try {
+        data = await res.json();
+        console.log("📥 Body JSON:", data);
+      } catch (jsonErr) {
+        console.error("❌ No se pudo parsear JSON:", jsonErr);
+        const text = await res.text();
+        console.error("📄 Cuerpo (texto):", text);
+        alert("Respuesta inválida del servidor. Revisa la consola (Network).");
+        return;
+      }
+
+      if (!res.ok) {
+        console.warn("⚠️ Respuesta no OK:", data);
+        alert(data.message || "Error al iniciar sesión");
+        return;
+      }
+
+      localStorage.setItem("tipo_usuario", data.tipo_usuario);
+      localStorage.setItem("email", data.email);
+
+      console.log("✅ Login OK. tipo_usuario:", data.tipo_usuario);
+
+      if (data.tipo_usuario === "Empleado") {
+        console.log("➡️ Redirigiendo a /admin");
+        navigate("/admin", { replace: true });
+      } else if (data.tipo_usuario === "Cliente") {
+        console.log("➡️ Redirigiendo a /cliente");
+        navigate("/cliente", { replace: true });
+      } else {
+        console.log("➡️ Redirigiendo a /");
+        navigate("/", { replace: true });
+      }
+    } catch (err) {
+      console.error("❌ Error catch handleLogin:", err);
+      alert("Error en el servidor. Intenta más tarde.");
+    } finally {
+      setLoading(false);
     }
-
-    if (!res.ok) {
-      console.warn("⚠️ Respuesta no OK:", data);
-      alert(data.message || "Error al iniciar sesión");
-      return;
-    }
-
-    localStorage.setItem("tipo_usuario", data.tipo_usuario);
-    localStorage.setItem("email", data.email);
-
-    console.log("✅ Login OK. tipo_usuario:", data.tipo_usuario);
-
-    if (data.tipo_usuario === "Empleado") {
-      console.log("➡️ Redirigiendo a /admin");
-      navigate("/admin", { replace: true });
-    } else if (data.tipo_usuario === "Cliente") {
-      console.log("➡️ Redirigiendo a /cliente");
-      navigate("/cliente", { replace: true });
-    } else {
-      console.log("➡️ Redirigiendo a /");
-      navigate("/", { replace: true });
-    }
-  } catch (err) {
-    console.error("❌ Error catch handleLogin:", err);
-    alert("Error en el servidor. Intenta más tarde.");
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   return (
     <div className="login-container">
@@ -126,3 +127,4 @@ const Login = () => {
 };
 
 export default Login;
+
